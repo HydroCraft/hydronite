@@ -37,7 +37,6 @@ cSharedLibrary::~cSharedLibrary()
 	{
 		Close();
 	}
-	m_Handle = nullptr;
 }
 
 
@@ -46,6 +45,13 @@ cSharedLibrary::~cSharedLibrary()
 
 bool cSharedLibrary::Load(const AString & a_LibName)
 {
+	ASSERT(!IsLoaded());
+
+	if (IsLoaded())
+	{
+		Close();
+	}
+
 #ifdef _WIN32
 	// TODO: Implement Windows DLL loading routine.
 #else
@@ -71,6 +77,7 @@ void cSharedLibrary::Close()
 #else
 	dlclose(m_Handle);
 #endif  // _WIN32
+	m_Handle = nullptr;
 }
 
 
@@ -89,6 +96,13 @@ bool cSharedLibrary::IsLoaded() const
 template <class T>
 T * cSharedLibrary::RetrieveSymbol(const AString & a_SymbolName)
 {
+	ASSERT(IsLoaded());
+
+	if (!IsLoaded())
+	{
+		return nullptr;
+	}
+
 	T * Symbol = nullptr;
 #ifdef _WIN32
 	// TODO: Implement Windows symbol retrieval.

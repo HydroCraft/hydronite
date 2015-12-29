@@ -21,6 +21,7 @@ SET (SRCS
 	ManualBindings_RankManager.cpp
 	ManualBindings_World.cpp
 	Plugin.cpp
+	PluginC.cpp
 	PluginLua.cpp
 	PluginManager.cpp
 	WebPlugin.cpp
@@ -42,6 +43,7 @@ SET (HDRS
 	LuaWindow.h
 	ManualBindings.h
 	Plugin.h
+	PluginC.h
 	PluginLua.h
 	PluginManager.h
 	WebPlugin.h
