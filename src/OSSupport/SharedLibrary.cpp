@@ -6,7 +6,7 @@
 // Windows.h is already included by Globals.h if compiled under Windows.
 #ifndef _WIN32
 #include <dlfcn.h>
-#endif // _WIN32
+#endif  // _WIN32
 
 
 
@@ -33,7 +33,7 @@ cSharedLibrary::cSharedLibrary(const AString & a_LibName) :
 
 cSharedLibrary::~cSharedLibrary()
 {
-	if(m_Handle)
+	if (m_Handle)
 	{
 		Close();
 	}
@@ -50,7 +50,7 @@ bool cSharedLibrary::Load(const AString & a_LibName)
 	// TODO: Implement Windows DLL loading routine.
 #else
 	m_Handle = dlopen(a_LibName.c_str(), RTLD_LOCAL | RTLD_LAZY);
-#endif // _WIN32
+#endif  // _WIN32
 
 	return m_Handle != nullptr;
 }
@@ -61,7 +61,7 @@ bool cSharedLibrary::Load(const AString & a_LibName)
 
 void cSharedLibrary::Close()
 {
-	if(!m_Handle)
+	if (!m_Handle)
 	{
 		return;
 	}
@@ -70,7 +70,7 @@ void cSharedLibrary::Close()
 	// TODO: Implement Windows DLL un-loading routine.
 #else
 	dlclose(m_Handle);
-#endif // _WIN32
+#endif  // _WIN32
 }
 
 
@@ -94,11 +94,11 @@ T * cSharedLibrary::RetrieveSymbol(const AString & a_SymbolName)
 	// TODO: Implement Windows symbol retrieval.
 #else
 	Symbol = (T *) dlsym(m_Handle, a_SymbolName.c_str());
-	if(dlerror())
+	if (dlerror())
 	{
 		return nullptr;
 	}
-#endif
+#endif  // _WIN32
 	return Symbol;
 }
 
