@@ -16,6 +16,7 @@ SET (SRCS
 	NetworkInterfaceEnum.cpp
 	NetworkSingleton.cpp
 	ServerHandleImpl.cpp
+	SharedLibrary.cpp
 	StackTrace.cpp
 	TCPLinkImpl.cpp
 	UDPEndpointImpl.cpp
@@ -34,6 +35,7 @@ SET (HDRS
 	NetworkSingleton.h
 	Queue.h
 	ServerHandleImpl.h
+	SharedLibrary.h
 	StackTrace.h
 	TCPLinkImpl.h
 	UDPEndpointImpl.h
