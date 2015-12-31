@@ -33,7 +33,7 @@ public:
 
 	/** Retrieve symbol of type T in library. */
 	template <class T>
-	T * cSharedLibrary::RetrieveSymbol(const AString & a_SymbolName)
+	T * RetrieveSymbol(const AString & a_SymbolName)
 	{
 		ASSERT(IsLoaded());
 
