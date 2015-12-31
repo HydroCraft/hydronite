@@ -3,6 +3,7 @@
 
 #include "PluginManager.h"
 #include "Plugin.h"
+#include "PluginC.h"
 #include "PluginLua.h"
 #include "../Item.h"
 #include "../Root.h"
@@ -98,9 +99,39 @@ void cPluginManager::RefreshPluginList(void)
 		}  // for plugin - m_Plugins[]
 		if (!hasFound)
 		{
-			m_Plugins.push_back(std::make_shared<cPluginLua>(folder));
+			m_Plugins.push_back(MakePlugin(folder));
 		}
 	}  // for folder - Folders[]
+}
+
+
+
+
+
+cPluginPtr cPluginManager::MakePlugin(const AString & a_FolderName)
+{
+	AString PluginPath = GetPluginsPath() + "/" + a_FolderName + "/";
+	AStringVector Files = cFile::GetFolderContents(PluginPath.c_str());
+	bool IsLuaPlugin = false;
+	for (AStringVector::const_iterator itr = Files.begin(), end = Files.end(); itr != end; ++itr)
+	{
+		if (itr->rfind(".lua") != AString::npos)
+		{
+			if (*itr == "Info.lua")
+			{
+				IsLuaPlugin = true;
+			}
+		}
+	}
+
+	if (IsLuaPlugin)
+	{
+		return std::make_shared<cPluginLua>(a_FolderName);
+	}
+	else
+	{
+		return std::make_shared<cPluginC>(a_FolderName);
+	}
 }
 
 

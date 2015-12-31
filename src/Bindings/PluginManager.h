@@ -373,6 +373,9 @@ private:
 	cPluginManager();
 	virtual ~cPluginManager();
 
+	/** Decides which type of plugin to instantiate */
+	cPluginPtr MakePlugin(const AString &);
+
 	/** Reloads all plugins, defaulting to settings.ini for settings location */
 	void ReloadPluginsNow(void);
 

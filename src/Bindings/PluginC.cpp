@@ -37,13 +37,7 @@ bool cPluginC::Load()
 {
 	cCSLock Lock(m_CriticalSection);
 
-	if  (
-#ifdef _WIN32
-		m_Module.Load(GetLocalFolder() + "/" + m_Name + ".dll")
-#else
-		m_Module.Load(FILE_IO_PREFIX + GetLocalFolder() + "/lib" + m_Name + ".so")
-#endif  // _WIN32
-		)
+	if (m_Module.Load(FILE_IO_PREFIX + GetLocalFolder() + "/lib" + m_Name + ".so"))
 	{
 		std::function<bool(void)> PluginInit = m_Module.RetrieveSymbol<bool(void)>("Init");
 		if (PluginInit)
