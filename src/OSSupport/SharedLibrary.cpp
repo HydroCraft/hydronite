@@ -3,11 +3,6 @@
 
 #include "SharedLibrary.h"
 
-// Windows.h is already included by Globals.h if compiled under Windows.
-#ifndef _WIN32
-#include <dlfcn.h>
-#endif  // _WIN32
-
 
 
 
@@ -87,33 +82,6 @@ void cSharedLibrary::Close()
 bool cSharedLibrary::IsLoaded() const
 {
 	return m_Handle != nullptr;
-}
-
-
-
-
-
-template <class T>
-T * cSharedLibrary::RetrieveSymbol(const AString & a_SymbolName)
-{
-	ASSERT(IsLoaded());
-
-	if (!IsLoaded())
-	{
-		return nullptr;
-	}
-
-	T * Symbol = nullptr;
-#ifdef _WIN32
-	// TODO: Implement Windows symbol retrieval.
-#else
-	Symbol = (T *) dlsym(m_Handle, a_SymbolName.c_str());
-	if (dlerror())
-	{
-		return nullptr;
-	}
-#endif  // _WIN32
-	return Symbol;
 }
 
 
