@@ -117,10 +117,8 @@ cPluginPtr cPluginManager::MakePlugin(const AString & a_FolderName)
 	{
 		if (itr->rfind(".lua") != AString::npos)
 		{
-			if (*itr == "Info.lua")
-			{
-				IsLuaPlugin = true;
-			}
+			IsLuaPlugin = true;
+			break;
 		}
 	}
 
