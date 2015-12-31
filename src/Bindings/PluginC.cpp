@@ -39,11 +39,11 @@ bool cPluginC::Load()
 
 	if (m_Module.Load(FILE_IO_PREFIX + GetLocalFolder() + "/lib" + m_Name + ".so"))
 	{
-		std::function<bool(void)> PluginInit = m_Module.RetrieveSymbol<bool(void)>("Init");
+		std::function<int(void)> PluginInit = m_Module.RetrieveSymbol<int(void)>("Init");
 		if (PluginInit)
 		{
 			m_Status = cPluginManager::psLoaded;
-			return PluginInit();
+			return PluginInit() == 0;
 		}
 
 		SetLoadError("Function bool Init(void) was not found in this module.");
