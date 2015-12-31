@@ -2,7 +2,6 @@
 #include "Globals.h"
 
 #include <functional>
-#include "OSSupport/SharedLibrary.h"
 #include "PluginC.h"
 
 

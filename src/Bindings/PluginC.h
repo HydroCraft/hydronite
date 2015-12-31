@@ -1,14 +1,9 @@
 
 #pragma once
 
+#include "OSSupport/SharedLibrary.h"
 #include "Plugin.h"
 #include "WebPlugin.h"
-
-
-
-
-
-class cSharedLibrary;
 
 
 
