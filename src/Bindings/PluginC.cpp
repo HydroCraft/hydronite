@@ -91,7 +91,16 @@ void cPluginC::OnDisable()
 
 void cPluginC::Tick(float a_Dt)
 {
+	cCSLock Lock(m_CriticalSection);
 
+	if (m_Module.IsLoaded())
+	{
+		std::function<void(float)> PluginTick = m_Module.RetrieveSymbol<void(float)>("Tick");
+		if (PluginTick)
+		{
+			PluginTick(a_Dt);
+		}
+	}
 }
 
 
@@ -541,6 +550,18 @@ bool cPluginC::OnPluginMessage(cClientHandle & a_Client, const AString & a_Chann
 
 bool cPluginC::OnPluginsLoaded()
 {
+	cCSLock Lock(m_CriticalSection);
+
+	if (m_Module.IsLoaded())
+	{
+		std::function<void(void)> PluginOnPluginsLoaded = m_Module.RetrieveSymbol<void(void)>("OnPluginsLoaded");
+		if (PluginOnPluginsLoaded)
+		{
+			PluginOnPluginsLoaded();
+			return true;
+		}
+	}
+
 	return false;
 }
 
