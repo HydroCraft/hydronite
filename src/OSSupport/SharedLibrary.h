@@ -6,6 +6,7 @@
 
 
 #include <dlfcn.h>
+#include <map>
 
 
 
@@ -42,17 +43,21 @@ public:
 			return nullptr;
 		}
 
-		T * Symbol = nullptr;
-#ifdef _WIN32
-		// TODO: Implement Windows symbol retrieval.
-#else
-		Symbol = (T *) dlsym(m_Handle, a_SymbolName.c_str());
-		if (dlerror())
+		if (m_SymbolCache.find(a_SymbolName) == m_SymbolCache.end())
 		{
-			return nullptr;
-		}
+#ifdef _WIN32
+			// TODO: Implement Windows symbol retrieval.
+#else
+			void * Symbol = dlsym(m_Handle, a_SymbolName.c_str());
+			if (dlerror())
+			{
+				m_SymbolCache[a_SymbolName] = nullptr;
+			}
 #endif  // _WIN32
-		return Symbol;
+			m_SymbolCache[a_SymbolName] = Symbol;
+		}
+
+		return (T *) m_SymbolCache[a_SymbolName];
 	}
 
 
@@ -61,6 +66,8 @@ public:
 
 private:
 	void * m_Handle;
+
+	std::map<AString, void*> m_SymbolCache;
 };
 
 

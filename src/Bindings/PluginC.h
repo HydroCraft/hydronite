@@ -102,9 +102,14 @@ public:
 	const AString GetWebTitle() const override;
 	AString HandleWebRequest(const HTTPRequest &) override;
 private:
+
+	typedef std::map<AString, void*> CommandMap;
+
 	cCriticalSection m_CriticalSection;
 
 	cSharedLibrary m_Module;
+
+	CommandMap m_CommandMap;
 };
 
 
