@@ -2,6 +2,8 @@
 #include "Globals.h"  // NOTE: MSVC stupidness requires this to be the same across all modules
 
 #include "Player.h"
+#include "Mobs/Wolf.h"
+#include "../BoundingBox.h"
 #include <unordered_map>
 #include "../ChatColor.h"
 #include "../Server.h"
@@ -87,6 +89,8 @@ cPlayer::cPlayer(cClientHandlePtr a_Client, const AString & a_PlayerName) :
 	m_UUID((a_Client != nullptr) ? a_Client->GetUUID() : ""),
 	m_CustomName("")
 {
+	ASSERT(a_PlayerName.length() <= 16);  // Otherwise this player could crash many clients...
+
 	m_InventoryWindow = new cInventoryWindow(*this);
 	m_CurrentWindow = m_InventoryWindow;
 	m_InventoryWindow->OpenedByPlayer(*this);
@@ -821,6 +825,10 @@ void cPlayer::SetFlying(bool a_IsFlying)
 
 bool cPlayer::DoTakeDamage(TakeDamageInfo & a_TDI)
 {
+	SetSpeed(0, 0, 0);
+	// Prevents knocking the player in the wrong direction due to
+	// the speed vector problems, see #2865
+	// In the future, the speed vector should be fixed
 	if ((a_TDI.DamageType != dtInVoid) && (a_TDI.DamageType != dtPlugin))
 	{
 		if (IsGameModeCreative() || IsGameModeSpectator())
@@ -850,10 +858,54 @@ bool cPlayer::DoTakeDamage(TakeDamageInfo & a_TDI)
 		AddFoodExhaustion(0.3f);
 		SendHealth();
 
+		if (a_TDI.Attacker != nullptr)
+		{
+			if (a_TDI.Attacker->IsPawn())
+			{
+				NotifyFriendlyWolves(static_cast<cPawn*>(a_TDI.Attacker));
+			}
+		}
 		m_Stats.AddValue(statDamageTaken, FloorC<StatValue>(a_TDI.FinalDamage * 10 + 0.5));
 		return true;
 	}
 	return false;
+}
+
+
+
+
+
+void cPlayer::NotifyFriendlyWolves(cPawn * a_Opponent)
+{
+	ASSERT(a_Opponent != nullptr);
+	class LookForWolves : public cEntityCallback
+	{
+	public:
+		cPlayer * m_Player;
+		cPawn * m_Attacker;
+
+		LookForWolves(cPlayer * a_Me, cPawn * a_MyAttacker) :
+			m_Player(a_Me),
+			m_Attacker(a_MyAttacker)
+		{
+		}
+
+		virtual bool Item(cEntity * a_Entity) override
+		{
+			if (a_Entity->IsMob())
+			{
+				cMonster * Mob = static_cast<cMonster*>(a_Entity);
+				if (Mob->GetMobType() == mtWolf)
+				{
+					cWolf * Wolf = static_cast<cWolf*>(Mob);
+					Wolf->NearbyPlayerIsFighting(m_Player, m_Attacker);
+				}
+			}
+			return false;
+		}
+	} Callback(this, a_Opponent);
+
+	m_World->ForEachEntityInBox(cBoundingBox(GetPosition(), 16, 16), Callback);
 }
 
 
@@ -908,7 +960,15 @@ void cPlayer::KilledBy(TakeDamageInfo & a_TDI)
 			case dtEnderPearl: DamageText = "misused an ender pearl"; break;
 			case dtAdmin: DamageText = "was administrator'd"; break;
 			case dtExplosion: DamageText = "blew up"; break;
-			default: DamageText = "died, somehow; we've no idea how though"; break;
+			case dtAttack: DamageText = "was attacked by thin air"; break;
+			#ifndef __clang__
+			default:
+			{
+				ASSERT(!"Unknown damage type");
+				DamageText = "died, somehow; we've no idea how though";
+				break;
+			}
+			#endif  // __clang__
 		}
 		AString DeathMessage = Printf("%s %s", GetName().c_str(), DamageText.c_str());
 		PluginManager->CallHookKilled(*this, a_TDI, DeathMessage);

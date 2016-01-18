@@ -101,6 +101,7 @@ public:
 	void SetDropChanceLeggings(float a_DropChanceLeggings) { m_DropChanceLeggings = a_DropChanceLeggings; }
 	void SetDropChanceBoots(float a_DropChanceBoots) { m_DropChanceBoots = a_DropChanceBoots; }
 	void SetCanPickUpLoot(bool a_CanPickUpLoot) { m_CanPickUpLoot = a_CanPickUpLoot; }
+	void ResetAttackCooldown();
 
 	/** Sets whether the mob burns in daylight. Only evaluated at next burn-decision tick */
 	void SetBurnsInDaylight(bool a_BurnsInDaylight) { m_BurnsInDaylight = a_BurnsInDaylight; }
@@ -188,7 +189,7 @@ protected:
 	bool ReachedFinalDestination(void) { return ((m_FinalDestination - GetPosition()).SqrLength() < WAYPOINT_RADIUS * WAYPOINT_RADIUS); }
 
 	/** Returns whether or not the target is close enough for attack. */
-	bool TargetIsInRange(void) { return ((m_FinalDestination - GetPosition()).SqrLength() < (m_AttackRange * m_AttackRange)); }
+	bool TargetIsInRange(void) { ASSERT(m_Target != nullptr); return ((m_Target->GetPosition() - GetPosition()).SqrLength() < (m_AttackRange * m_AttackRange)); }
 
 	/** Returns if a monster can reach a given height by jumping. */
 	inline bool DoesPosYRequireJump(int a_PosY)
@@ -220,7 +221,7 @@ protected:
 	float m_AttackRate;
 	int m_AttackDamage;
 	int m_AttackRange;
-	float m_AttackInterval;
+	int m_AttackCoolDownTicksLeft;
 	int m_SightDistance;
 
 	float m_DropChanceWeapon;

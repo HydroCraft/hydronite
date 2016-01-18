@@ -1834,39 +1834,44 @@ void cProtocol180::AddReceivedData(const char * a_Data, size_t a_Size)
 		}
 		
 		// Check packet for compression:
-		UInt32 CompressedSize = 0;
+		UInt32 UncompressedSize = 0;
 		AString UncompressedData;
 		if (m_State == 3)
 		{
 			UInt32 NumBytesRead = static_cast<UInt32>(m_ReceivedData.GetReadableSpace());
-			m_ReceivedData.ReadVarInt(CompressedSize);
-			if (CompressedSize > PacketLen)
+
+			if (!m_ReceivedData.ReadVarInt(UncompressedSize))
 			{
-				m_Client->Kick("Bad compression");
+				m_Client->Kick("Compression packet incomplete");
 				return;
 			}
-			if (CompressedSize > 0)
+
+			NumBytesRead -= static_cast<UInt32>(m_ReceivedData.GetReadableSpace());  // How many bytes has the UncompressedSize taken up?
+			ASSERT(PacketLen > NumBytesRead);
+			PacketLen -= NumBytesRead;
+
+			if (UncompressedSize > 0)
 			{
 				// Decompress the data:
 				AString CompressedData;
-				if (!m_ReceivedData.ReadString(CompressedData, CompressedSize) || (InflateString(CompressedData.data(), CompressedSize, UncompressedData) != Z_OK))
+				VERIFY(m_ReceivedData.ReadString(CompressedData, PacketLen));
+				if (InflateString(CompressedData.data(), PacketLen, UncompressedData) != Z_OK)
 				{
 					m_Client->Kick("Compression failure");
 					return;
 				}
 				PacketLen = static_cast<UInt32>(UncompressedData.size());
-			}
-			else
-			{
-				NumBytesRead -= static_cast<UInt32>(m_ReceivedData.GetReadableSpace());  // How many bytes has the CompressedSize taken up?
-				ASSERT(PacketLen > NumBytesRead);
-				PacketLen -= NumBytesRead;
+				if (PacketLen != UncompressedSize)
+				{
+					m_Client->Kick("Wrong uncompressed packet size given");
+					return;
+				}
 			}
 		}
 		
 		// Move the packet payload to a separate cByteBuffer, bb:
 		cByteBuffer bb(PacketLen + 1);
-		if (CompressedSize == 0)
+		if (UncompressedSize == 0)
 		{
 			// No compression was used, move directly
 			VERIFY(m_ReceivedData.ReadToByteBuffer(bb, static_cast<size_t>(PacketLen)));
@@ -1916,7 +1921,7 @@ void cProtocol180::AddReceivedData(const char * a_Data, size_t a_Size)
 				bb.ReadAll(Packet);
 				Packet.resize(Packet.size() - 1);  // Drop the final NUL pushed there for over-read detection
 				AString Out;
-				CreateHexDump(Out, Packet.data(), (int)Packet.size(), 24);
+				CreateHexDump(Out, Packet.data(), Packet.size(), 24);
 				LOGD("Packet contents:\n%s", Out.c_str());
 			#endif  // _DEBUG
 			
@@ -2145,7 +2150,7 @@ void cProtocol180::HandlePacketLoginEncryptionResponse(cByteBuffer & a_ByteBuffe
 
 	// Decrypt EncNonce using privkey
 	cRsaPrivateKey & rsaDecryptor = cRoot::Get()->GetServer()->GetPrivateKey();
-	Int32 DecryptedNonce[MAX_ENC_LEN / sizeof(Int32)];
+	UInt32 DecryptedNonce[MAX_ENC_LEN / sizeof(Int32)];
 	int res = rsaDecryptor.Decrypt(reinterpret_cast<const Byte *>(EncNonce.data()), EncNonce.size(), reinterpret_cast<Byte *>(DecryptedNonce), sizeof(DecryptedNonce));
 	if (res != 4)
 	{
@@ -3104,8 +3109,21 @@ void cProtocol180::WriteBlockEntity(cPacketizer & a_Pkt, const cBlockEntity & a_
 			Writer.AddInt("z", MobHeadEntity.GetPosZ());
 			Writer.AddByte("SkullType", MobHeadEntity.GetType() & 0xFF);
 			Writer.AddByte("Rot", MobHeadEntity.GetRotation() & 0xFF);
-			Writer.AddString("ExtraType", MobHeadEntity.GetOwner().c_str());
 			Writer.AddString("id", "Skull");  // "Tile Entity ID" - MC wiki; vanilla server always seems to send this though
+
+			// The new Block Entity format for a Mob Head. See: http://minecraft.gamepedia.com/Head#Block_entity
+			Writer.BeginCompound("Owner");
+				Writer.AddString("Id", MobHeadEntity.GetOwnerUUID());
+				Writer.AddString("Name", MobHeadEntity.GetOwnerName());
+				Writer.BeginCompound("Properties");
+					Writer.BeginList("textures", TAG_Compound);
+						Writer.BeginCompound("");
+							Writer.AddString("Signature", MobHeadEntity.GetOwnerTextureSignature());
+							Writer.AddString("Value", MobHeadEntity.GetOwnerTexture());
+						Writer.EndCompound();
+					Writer.EndList();
+				Writer.EndCompound();
+			Writer.EndCompound();
 			break;
 		}
 
